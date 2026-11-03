@@ -1,5 +1,12 @@
 [
   {
+    "id": "microprocessor-a",
+    "term": "題庫",
+    "title": "微處理機",
+    "desc": "題庫 A：CPU 組成、暫存器、匯流排、記憶體計算、I/O、程式語言",
+    "total": 63
+  },
+  {
     "id": "electronics-midterm",
     "term": "期中考",
     "title": "電子學",
