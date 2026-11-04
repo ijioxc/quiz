@@ -737,7 +737,9 @@ const CHAPTERS = [];
   for (const c of CHAPTERS) {
     for (const s of c.sets) sets.push({id: c.ch * 10 + s.id, label: `第 ${c.ch} 章 ${s.label}`});
     for (const q of c.bank) {
-      bank.push({...q, id: `c${c.ch}-${q.id}`, set: c.ch * 10 + q.set, ...(q.gen ? {gen: `c${c.ch}-${q.gen}`} : {})});
+      // 老師列的習題都是重點題（「只刷重點題」給考前衝刺），例題講解不算
+      const key = q.key ?? c.sets.find(s => s.id === q.set).label === '習題';
+      bank.push({...q, id: `c${c.ch}-${q.id}`, set: c.ch * 10 + q.set, key, ...(q.gen ? {gen: `c${c.ch}-${q.gen}`} : {})});
     }
     for (const k in c.gen) gen[`c${c.ch}-${k}`] = c.gen[k];
     for (const f of c.formulas || []) formulas.push([f[0], f[1], `第 ${c.ch} 章 ${f[2] || ''}`.trim()]);

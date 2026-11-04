@@ -52,7 +52,9 @@ function boot(E){
   $('#eyebrow').textContent=E.eyebrow||'';
   $('#title').textContent=E.title;
   const scopeEl=$('#scope');
+  const KEY_IDS=BANK.filter(q=>q.key).map(q=>q.id);
   scopeEl.innerHTML=`<option value="all">全部（${TOTAL} 題）</option>`
+    +(KEY_IDS.length?`<option value="key">只刷重點題（${KEY_IDS.length} 題）</option>`:'')
     +(E.sets.length>1?E.sets.map(s=>`<option value="${s.id}">只刷${esc(s.label)}</option>`).join(''):'')
     +(CALC_IDS.length?`<option value="calc">計算特訓（無限換數字）</option>`:'')
     +`<option value="wrong">只刷錯題</option>`;
@@ -64,6 +66,7 @@ function boot(E){
     if(S.scope==='wrong')ids=BANK.map(q=>q.id).filter(id=>S.wrong.includes(id));
     else if(S.scope==='calc')ids=[];
     else if(S.scope==='all')ids=BANK.map(q=>q.id);
+    else if(S.scope==='key')ids=KEY_IDS;
     else ids=BANK.filter(q=>String(q.set)===String(S.scope)).map(q=>q.id);
     queue=S.order==='rnd'?shuffle(ids):ids;pos=0;round={ok:0,n:0};
   }
