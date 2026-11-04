@@ -17,8 +17,8 @@
     "id": "autocontrol-ch2",
     "term": "第 2 章",
     "title": "自動控制",
-    "desc": "古典控制學的數學建模",
-    "total": 0
+    "desc": "時域建模（電路、機械、齒輪、馬達）、拉氏轉換與部分分式、微分方程求解、轉移函數",
+    "total": 31
   },
   {
     "id": "autocontrol-ch1",

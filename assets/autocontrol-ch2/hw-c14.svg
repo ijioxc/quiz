@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" font-family="Times New Roman,serif" font-style="italic" font-size="17" fill="#111" viewBox="0 0 380 190"><rect width="380" height="190" fill="#fff"/>
+<g fill="none" stroke="#111" stroke-width="2"><path d="M34 40H80M130 40H336M34 160H336M180 40V92M165 92H195M165 100H195M180 100V160M260 40V55M260 95V105a6.5 6.25 0 0 1 0 12.5a6.5 6.25 0 0 1 0 12.5a6.5 6.25 0 0 1 0 12.5V160"/><rect x="80" y="32" width="50" height="16"/><rect x="252" y="55" width="16" height="40"/></g>
+<g fill="#fff" stroke="#111" stroke-width="2"><circle cx="30" cy="40" r="4"/><circle cx="30" cy="160" r="4"/><circle cx="340" cy="40" r="4"/><circle cx="340" cy="160" r="4"/></g>
+<circle cx="180" cy="40" r="4"/><circle cx="260" cy="40" r="4"/><circle cx="180" cy="160" r="4"/><circle cx="260" cy="160" r="4"/>
+<text x="94" y="24">R<tspan font-size="12" dy="4">1</tspan></text><text x="150" y="102">C</text><text x="274" y="80">R<tspan font-size="12" dy="4">2</tspan></text><text x="274" y="132">L</text>
+<text x="14" y="104">u<tspan font-size="12" dy="4">1</tspan><tspan dy="-4">(t)</tspan></text><text x="316" y="104">u<tspan font-size="12" dy="4">2</tspan><tspan dy="-4">(t)</tspan></text></svg>
