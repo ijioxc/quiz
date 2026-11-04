@@ -3,8 +3,8 @@
     "id": "autocontrol-ch4",
     "term": "第 4 章",
     "title": "自動控制",
-    "desc": "控制系統的時域響應分析",
-    "total": 0
+    "desc": "時域響應：時間常數、暫態與穩態、二階系統 ζ／ωn、tr／tp／Mp／ts",
+    "total": 11
   },
   {
     "id": "autocontrol-ch3",
