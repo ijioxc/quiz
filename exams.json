@@ -24,8 +24,8 @@
     "id": "autocontrol-ch1",
     "term": "第 1 章",
     "title": "自動控制",
-    "desc": "自動控制導論",
-    "total": 0
+    "desc": "自動控制導論：開迴路與閉迴路、回授、線性判斷、性能要求、測試訊號",
+    "total": 40
   },
   {
     "id": "microprocessor-a",

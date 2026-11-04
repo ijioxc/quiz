@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 330" width="640" height="330" font-family="'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif" font-size="15" fill="#1f2937">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/></marker></defs>
+<rect width="100%" height="100%" fill="#fff"/>
+<rect x="150" y="50" width="230" height="110" fill="none" stroke="#6b7280" stroke-width="1.5" stroke-dasharray="6 5"/>
+<text x="265" y="40" text-anchor="middle">控制單元</text>
+<text x="20" y="95">設定點*</text><text x="40" y="128">30°</text>
+<path d="M20,105 L182,105" stroke="#2563eb" stroke-width="1.8" fill="none" marker-end="url(#ah)"/>
+<text x="168" y="88" font-size="13" fill="#6b7280">Vin</text>
+<circle cx="200" cy="105" r="18" fill="#fff" stroke="#1f2937" stroke-width="2"/>
+<text x="172" y="130">+</text><text x="205" y="145">−</text>
+<path d="M218,105 L292,105" stroke="#2563eb" stroke-width="1.8" fill="none" marker-end="url(#ah)"/>
+<text x="255" y="96" text-anchor="middle" font-size="13" fill="#6b7280">誤差</text>
+<path d="M294,80 L294,130 L340,105 Z" fill="#fff" stroke="#1f2937" stroke-width="2"/>
+<path d="M340,105 L438,105" stroke="#2563eb" stroke-width="1.8" fill="none" marker-end="url(#ah)"/>
+<rect x="440" y="55" width="110" height="100" rx="10" fill="#e5e7eb" stroke="#1f2937" stroke-width="1.5"/>
+<text x="495" y="110" text-anchor="middle">馬達</text>
+<rect x="487" y="155" width="16" height="70" fill="#d1d5db" stroke="#1f2937"/>
+<rect x="495" y="200" width="120" height="26" rx="10" fill="#e5e7eb" stroke="#1f2937"/>
+<text x="625" y="218" font-size="13">0°</text>
+<g transform="rotate(-30 495 213)"><rect x="495" y="200" width="120" height="26" rx="10" fill="none" stroke="#6b7280" stroke-dasharray="5 4"/></g>
+<text x="600" y="150" font-size="13">30°</text>
+<rect x="470" y="232" width="50" height="40" rx="8" fill="#e5e7eb" stroke="#1f2937"/>
+<text x="530" y="258" font-size="13">（角度計）</text>
+<path d="M470,252 L200,252 L200,125" stroke="#2563eb" stroke-width="1.8" fill="none" marker-end="url(#ah)"/>
+<text x="330" y="244" text-anchor="middle">回授</text>
+<text x="20" y="310" font-size="13" fill="#6b7280">*設定點為代表 30° 的電壓</text>
+</svg>
