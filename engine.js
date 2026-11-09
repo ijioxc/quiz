@@ -33,6 +33,9 @@ const QUIZ={register(exam){QUIZ.exam=exam;boot(exam)}};
 function boot(E){
   const BANK=E.bank,GEN=E.gen||{},Q=Object.fromEntries(BANK.map(q=>[q.id,q]));
   const CALC_IDS=BANK.filter(q=>q.gen).map(q=>q.id),TOTAL=BANK.length;
+  /* 總題號：整科從 1 編到最後一題，順序和進度格子一樣，跨章也不會重複 */
+  const NO=Object.fromEntries(BANK.map((q,i)=>[q.id,i+1]));
+  const origNo=q=>q.no?q.no:`第 ${q.n} 題`;
   const setLabel=id=>(E.sets.find(s=>s.id===id)||{}).label||'';
   let S={rec:{},wrong:[],scope:'all',order:'seq'};
   const saved=loadProgress(E.id);if(saved&&saved.rec)S=Object.assign(S,saved);
@@ -141,7 +144,7 @@ function boot(E){
       return;
     }
     const q=Q[cur.id],st=status(cur.id);
-    let h=`<div class="meta"><span class="chip">${esc(setLabel(q.set))} · ${q.no?esc(q.no):`第 ${q.n} 題`}</span><span class="chip">${esc(q.topic)}</span>`;
+    let h=`<div class="meta"><span class="chip gno">總題號 ${NO[q.id]}</span><span class="chip">${esc(setLabel(q.set))} · ${esc(origNo(q))}</span><span class="chip">${esc(q.topic)}</span>`;
     if(cur.variant)h+=`<span class="chip var">換數字版</span>`;
     if(st==='mast')h+=`<span class="chip mast">已精通</span>`;
     h+=`</div>`;
@@ -185,12 +188,12 @@ function boot(E){
     c.innerHTML=h;
   }
   function renderMap(){
-    let h=`<h2>${TOTAL} 題進度（點格子跳到該題）</h2>`;
+    let h=`<h2>${TOTAL} 題進度（格子上是總題號，點格子跳到該題）</h2>`;
     E.sets.forEach(s=>{
       const qs=BANK.filter(q=>q.set===s.id);
       h+=`<div class="maprow"><span class="lb">${esc(s.label)}</span><div class="cells">`;
       qs.forEach(q=>{
-        h+=`<button class="cell ${status(q.id)}${cur&&cur.id===q.id?' cur':''}" data-jump="${q.id}" title="${esc(q.short)}" aria-label="${esc(s.label)} 第${q.n}題 ${esc(q.short)}">${q.n}</button>`;
+        h+=`<button class="cell ${status(q.id)}${cur&&cur.id===q.id?' cur':''}" data-jump="${q.id}" title="總題號 ${NO[q.id]}｜${esc(s.label)} ${esc(origNo(q))}｜${esc(q.short)}" aria-label="總題號 ${NO[q.id]}，${esc(s.label)} ${esc(origNo(q))} ${esc(q.short)}">${NO[q.id]}</button>`;
       });
       h+=`</div></div>`;
     });
@@ -204,7 +207,7 @@ function boot(E){
     if(!S.wrong.length){v.innerHTML=`<div class="card empty"><b>目前沒有錯題</b>去「刷題」做一輪，答錯的會自動收進來。</div>`+resetHtml();return}
     const ids=BANK.map(q=>q.id).filter(id=>S.wrong.includes(id));
     v.innerHTML=`<div class="bar"><button class="btn pri" data-act="dowrong">全部重刷（${ids.length} 題）</button><span class="note">答對原題就會移出錯題本。</span></div>
-    <div class="wl">${ids.map(id=>{const q=Q[id];return`<div class="wi"><div class="tt"><small>${esc(setLabel(q.set))} 第 ${q.n} 題 · ${esc(q.topic)}</small>${esc(q.short)}</div><button class="btn" data-jump="${id}">練這題</button></div>`}).join('')}</div>`+resetHtml();
+    <div class="wl">${ids.map(id=>{const q=Q[id];return`<div class="wi"><div class="tt"><small>總題號 ${NO[id]} · ${esc(setLabel(q.set))} ${esc(origNo(q))} · ${esc(q.topic)}</small>${esc(q.short)}</div><button class="btn" data-jump="${id}">練這題</button></div>`}).join('')}</div>`+resetHtml();
   }
   function renderLearn(){
     let h='';
@@ -216,7 +219,7 @@ function boot(E){
       [...new Set(qs.map(q=>q.topic))].forEach(t=>{
         h+=`<div class="grp"><h3>${esc(t)}</h3>`;
         qs.filter(q=>q.topic===t).forEach(q=>{
-          h+=`<details class="item"><summary><span class="dot ${status(q.id)}"></span><span class="no">${q.no?esc(q.no):`第 ${q.n} 題`}</span><span class="tt">${esc(q.short)}</span></summary>
+          h+=`<details class="item"><summary><span class="dot ${status(q.id)}"></span><span class="no">#${NO[q.id]}</span><span class="tt">${esc(origNo(q))}　${esc(q.short)}</span></summary>
           <div class="in">${q.sol?`<div class="wk">${q.html}</div><div class="wk wk-sol">${q.sol}</div>`:`<p class="qtext-sm">${esc(q.q)}</p>${qImg(q)}<p class="ans">答案：${esc(q.o[q.a])}</p><p>${esc(q.exp)}</p>${q.deep||''}`}
           <p><button class="btn" data-jump="${q.id}">去練這題</button></p></div></details>`;
         });
@@ -246,6 +249,20 @@ function boot(E){
     window.scrollTo({top:0,behavior:'smooth'});
   }
 
+  /* 依總題號跳題：輸入框、或網址加 &q=<總題號> */
+  function gotoNo(v){
+    const n=parseInt(String(v).replace(/[^0-9]/g,''),10);
+    if(n>=1&&n<=TOTAL){jump(BANK[n-1].id);return true}
+    return false;
+  }
+  const gotoEl=$('#goto');
+  if(gotoEl){
+    gotoEl.max=TOTAL;gotoEl.placeholder=`1–${TOTAL}`;
+    const go=()=>{if(gotoNo(gotoEl.value))gotoEl.value='';else gotoEl.select()};
+    gotoEl.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();go()}});
+    $('#gobtn').addEventListener('click',go);
+  }
+
   /* 事件 */
   document.addEventListener('click',e=>{
     const t=e.target.closest('[data-opt],[data-self],[data-act],[data-jump],.tab');if(!t)return;
@@ -269,7 +286,7 @@ function boot(E){
   $('#order').addEventListener('change',e=>{S.order=e.target.value;save();start()});
   document.addEventListener('keydown',e=>{
     if(view!=='drill'||!cur||e.metaKey||e.ctrlKey||e.altKey)return;
-    if(e.target.tagName==='SELECT')return;
+    if(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')return;
     const k=e.key.toLowerCase();
     if(cur.self&&!cur.done){
       if(!cur.revealed&&k==='enter'){e.preventDefault();cur.revealed=true;render()}
@@ -284,6 +301,8 @@ function boot(E){
   if(![...scopeEl.options].some(o=>o.value===String(S.scope)))S.scope='all';
   scopeEl.value=S.scope;$('#order').value=S.order;
   start();
+  const qp=new URLSearchParams(location.search).get('q');
+  if(qp)gotoNo(qp);
 }
 
 /* 依網址 ?exam=<id> 載入題庫 */
