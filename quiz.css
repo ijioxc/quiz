@@ -51,6 +51,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visi
 select,.bar input{font:inherit;font-size:14px;padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
 .bar input{width:72px}
 #gobtn{padding:6px 12px;font-size:14px}
+.copybox{width:100%;height:220px;margin-top:8px;font:inherit;font-size:13px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink)}
 .chip.gno{background:var(--accent-soft);color:var(--accent);font-weight:700}
 .pos{margin-left:auto;font-family:var(--font-mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 

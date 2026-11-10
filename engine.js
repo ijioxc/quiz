@@ -198,6 +198,7 @@ function boot(E){
       h+=`</div></div>`;
     });
     h+=`<div class="legend"><span><i></i>還沒做</span><span><i class="l-bad"></i>錯題</span><span><i class="l-ok"></i>答對過</span><span><i class="l-mast"></i>${CALC_IDS.length?'精通（計算題要再換數字對 2 次）':'精通'}</span></div>`;
+    h+=`<div class="acts"><button class="btn" data-act="copylist">複製題號表（貼給 AI 用）</button><span class="note" id="copymsg"></span></div><textarea id="copybox" class="copybox" readonly hidden></textarea>`;
     $('#map').innerHTML=h;
   }
   let resetArm=false;
@@ -249,6 +250,26 @@ function boot(E){
     window.scrollTo({top:0,behavior:'smooth'});
   }
 
+  /* 題號表：每題標總題號，貼給 AI，請它講題時用總題號 */
+  function listText(){
+    const strip=h=>String(h||'').replace(/<br\s*\/?>/g,'\n').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/[ \t]+/g,' ').trim();
+    let t=`${E.title}・題號表（總題號 1–${TOTAL}）\n請你講題時一律用「總題號」稱呼題目（例如「第 36 題」），不要用章節裡的原題號，我才找得到題目。\n`;
+    E.sets.forEach(s=>{
+      t+=`\n【${s.label}】\n`;
+      BANK.filter(q=>q.set===s.id).forEach(q=>{
+        t+=`\n第 ${NO[q.id]} 題（原題號：${origNo(q)}｜${q.topic}）\n${q.sol?strip(q.html)||q.q:q.q}\n`;
+        if(q.o)t+=`選項：${q.o.join('／')}\n`;
+      });
+    });
+    return t;
+  }
+  function copyList(){
+    const txt=listText(),msg=$('#copymsg'),box=$('#copybox');
+    const fallback=()=>{box.hidden=false;box.value=txt;box.focus();box.select();msg.textContent='請全選下面的文字自己複製。'};
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(()=>{msg.textContent=`已複製 ${TOTAL} 題，貼給 AI 就可以。`},fallback);
+    else fallback();
+  }
+
   /* 依總題號跳題：輸入框、或網址加 &q=<總題號> */
   function gotoNo(v){
     const n=parseInt(String(v).replace(/[^0-9]/g,''),10);
@@ -274,6 +295,7 @@ function boot(E){
     if(a==='next')next();
     else if(a==='variant')load(cur.id,true);
     else if(a==='speak')toggleSpeech();
+    else if(a==='copylist')copyList();
     else if(a==='reveal'){cur.revealed=true;render()}
     else if(a==='again'){S.order='rnd';$('#order').value='rnd';save();start()}
     else if(a==='dowrong'){S.scope='wrong';scopeEl.value='wrong';save();show('drill');start()}

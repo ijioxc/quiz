@@ -732,18 +732,44 @@ const CHAPTERS = [];
 }
 
 // ═════════ 合併註冊 ═════════
+/* 總題號順序：不用計算的觀念題全部排最前面（不分章），後面才是計算題，計算題依第 1～4 章排。
+   總題號 = 合併後的順序（1、2、3…），AI 講題時用這個號碼。
+   要把某題改成觀念題或計算題，只改下面 CONCEPT 這份清單（id 用合併後的 c章-原id）。 */
+const CONCEPT = new Set([
+  // 第 1 章：全部是觀念題
+  'c1-1','c1-2','c1-3','c1-4','c1-5','c1-6','c1-7','c1-8','c1-9','c1-10','c1-q8',
+  'c1-14-1','c1-14-2','c1-14-3','c1-14-4','c1-14-5','c1-14-6','c1-14-7',
+  // 第 2 章：轉移函數成立的條件
+  'c2-hw-m14',
+  // 第 4 章：暫態／穩態、阻尼類型、超越量與 ωn 的關係
+  'c4-4-3','c4-4-4','c4-4-5','c4-4-9',
+]);
 {
-  const bank = [], gen = {}, sets = [], formulas = [];
+  const all = [], gen = {}, formulas = [];
   for (const c of CHAPTERS) {
-    for (const s of c.sets) sets.push({id: c.ch * 10 + s.id, label: `第 ${c.ch} 章 ${s.label}`});
     for (const q of c.bank) {
+      const setLabel = c.sets.find(s => s.id === q.set).label;
       // 老師列的習題都是重點題（「只刷重點題」給考前衝刺），例題講解不算
-      const key = q.key ?? c.sets.find(s => s.id === q.set).label === '習題';
-      bank.push({...q, id: `c${c.ch}-${q.id}`, set: c.ch * 10 + q.set, key, ...(q.gen ? {gen: `c${c.ch}-${q.gen}`} : {})});
+      const key = q.key ?? setLabel === '習題';
+      const orig = q.no ?? `第 ${q.n} 題`;
+      const no = /^\d/.test(orig) ? `${setLabel} ${orig}` : orig;
+      const id = `c${c.ch}-${q.id}`;
+      // 觀念題跨章混在一起，原題號前面加章別；計算題的分組名稱已經有章別
+      const chNo = CONCEPT.has(id) ? `第 ${c.ch} 章 ${no}` : no;
+      all.push({...q, id, ch: c.ch, no: chNo, key, ...(q.gen ? {gen: `c${c.ch}-${q.gen}`} : {})});
     }
     for (const k in c.gen) gen[`c${c.ch}-${k}`] = c.gen[k];
     for (const f of c.formulas || []) formulas.push([f[0], f[1], `第 ${c.ch} 章 ${f[2] || ''}`.trim()]);
   }
+  const sets = [{id: 1, label: '觀念題'}];
+  const bank = all.filter(q => CONCEPT.has(q.id)).map(q => ({...q, set: 1}));
+  for (const c of CHAPTERS) {
+    const calc = all.filter(q => q.ch === c.ch && !CONCEPT.has(q.id));
+    if (!calc.length) continue;
+    sets.push({id: c.ch * 10, label: `第 ${c.ch} 章 計算題`});
+    bank.push(...calc.map(q => ({...q, set: c.ch * 10})));
+  }
+  bank.forEach((q, i) => q.n = i + 1);
   QUIZ.register({
     id: 'autocontrol',
     title: '自動控制',
