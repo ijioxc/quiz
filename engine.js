@@ -36,6 +36,11 @@ function boot(E){
   /* 總題號：整科從 1 編到最後一題，順序和進度格子一樣，跨章也不會重複 */
   const NO=Object.fromEntries(BANK.map((q,i)=>[q.id,i+1]));
   const origNo=q=>q.no?q.no:`第 ${q.n} 題`;
+  /* 查表區：E.refs 是編號的參考表，題目用 q.refs 列出要查哪幾張（id）。表號 = 在 E.refs 的順序 */
+  const REFS=E.refs||[],REF=Object.fromEntries(REFS.map((t,i)=>[t.id,{...t,no:i+1}]));
+  const qRefs=q=>(q.refs||[]).filter(id=>REF[id]).map(id=>REF[id]).sort((a,b)=>a.no-b.no);
+  const refName=t=>`表 ${t.no}　${t.title}`;
+  const refBtns=q=>qRefs(q).map(t=>`<button class="refbtn" data-ref="${t.id}">${esc(refName(t))}</button>`).join('');
   const setLabel=id=>(E.sets.find(s=>s.id===id)||{}).label||'';
   let S={rec:{},wrong:[],scope:'all',order:'seq'};
   const saved=loadProgress(E.id);if(saved&&saved.rec)S=Object.assign(S,saved);
@@ -153,6 +158,7 @@ function boot(E){
       <details class="deep"${cur.done||!canSpeak()?' open':''}><summary>聽力原文</summary><div class="in script">${q.scriptTitle?`<b>${esc(q.scriptTitle)}</b>\n\n`:''}${esc(q.script)}</div></details></div>`;
     }
     h+=`<p class="qtext">${esc(cur.text)}</p>${qImg(q)}`;
+    if(qRefs(q).length)h+=`<p class="refline">要查：${refBtns(q)}</p>`;
     if(cur.self){
       h+=`<div class="wk">${q.html}</div>`;
       if(!cur.revealed){
@@ -212,6 +218,16 @@ function boot(E){
   }
   function renderLearn(){
     let h='';
+    if(REFS.length){
+      h+=`<h2>查表區（${REFS.length} 張表，寫題時對照用）</h2><p class="note">每張表下面列出會用到它的總題號，點題號就去練那題。題目上方的「要查」也會告訴你該翻哪張表。</p>`;
+      REFS.forEach(t0=>{const t=REF[t0.id];
+        const used=BANK.filter(q=>(q.refs||[]).includes(t.id));
+        h+=`<details class="item ref" id="ref-${t.id}"><summary><span class="no">表 ${t.no}</span><span class="tt">${esc(t.title)}</span></summary><div class="in">`
+          +(used.length?`<p class="refuse">會用到的題：${used.map(q=>`<button class="refbtn" data-jump="${q.id}">第 ${NO[q.id]} 題</button>`).join('')}</p>`:'')
+          +`<div class="tblwrap"><table><tbody>${t.rows.map((r,i)=>`<tr><td class="rn">${i+1}</td><td class="fm">${r[0]}</td><td>${r[1]||''}</td></tr>`).join('')}</tbody></table></div>`
+          +(t.note?`<p class="note">${t.note}</p>`:'')+`</div></details>`;
+      });
+    }
     if(E.formulas&&E.formulas.length)h+=`<h2>公式總表</h2><div class="tblwrap"><table><thead><tr><th>公式</th><th>用途</th><th>出處</th></tr></thead><tbody>${E.formulas.map(f=>`<tr><td class="fm">${f[0]}</td><td>${f[1]}</td><td>${f[2]}</td></tr>`).join('')}</tbody></table></div>`;
     if(E.unitNote)h+=`<p class="note">${esc(E.unitNote)}</p>`;
     E.sets.forEach(s=>{
@@ -222,7 +238,7 @@ function boot(E){
         qs.filter(q=>q.topic===t).forEach(q=>{
           h+=`<details class="item"><summary><span class="dot ${status(q.id)}"></span><span class="no">#${NO[q.id]}</span><span class="tt">${esc(origNo(q))}　${esc(q.short)}</span></summary>
           <div class="in">${q.sol?`<div class="wk">${q.html}</div><div class="wk wk-sol">${q.sol}</div>`:`<p class="qtext-sm">${esc(q.q)}</p>${qImg(q)}<p class="ans">答案：${esc(q.o[q.a])}</p><p>${esc(q.exp)}</p>${q.deep||''}`}
-          <p><button class="btn" data-jump="${q.id}">去練這題</button></p></div></details>`;
+          ${qRefs(q).length?`<p class="refline">要查：${refBtns(q)}</p>`:''}<p><button class="btn" data-jump="${q.id}">去練這題</button></p></div></details>`;
         });
         h+=`</div>`;
       });
@@ -254,13 +270,23 @@ function boot(E){
   function listText(){
     const strip=h=>String(h||'').replace(/<br\s*\/?>/g,'\n').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/[ \t]+/g,' ').trim();
     let t=`${E.title}・題號表（總題號 1–${TOTAL}）\n請你講題時一律用「總題號」稱呼題目（例如「第 36 題」），不要用章節裡的原題號，我才找得到題目。\n`;
+    if(REFS.length)t+=`我的考試可以翻書，網站上有編號的查表區（內容附在最後面）。講題時請告訴我要翻哪一張表的哪一列。\n`;
     E.sets.forEach(s=>{
       t+=`\n【${s.label}】\n`;
       BANK.filter(q=>q.set===s.id).forEach(q=>{
-        t+=`\n第 ${NO[q.id]} 題（原題號：${origNo(q)}｜${q.topic}）\n${q.sol?strip(q.html)||q.q:q.q}\n`;
+        t+=`\n第 ${NO[q.id]} 題（原題號：${s.label}・${origNo(q)}｜${q.topic}）\n${q.sol?strip(q.html)||q.q:q.q}\n`;
         if(q.o)t+=`選項：${q.o.join('／')}\n`;
+        if(qRefs(q).length)t+=`要查：${qRefs(q).map(refName).join('、')}\n`;
       });
     });
+    if(REFS.length){
+      const plain=h=>strip(String(h).replace(/<sup>/g,'^(').replace(/<\/sup>/g,')').replace(/<sub>/g,'_').replace(/<\/sub>/g,''));
+      t+=`\n\n====== 查表區 ======\n`;
+      REFS.forEach(t0=>{const tb=REF[t0.id];
+        t+=`\n【${refName(tb)}】\n`+tb.rows.map((rw,i)=>`${i+1}. ${plain(rw[0])}：${plain(rw[1]||'')}`).join('\n')+'\n';
+        if(tb.note)t+=`註：${plain(tb.note)}\n`;
+      });
+    }
     return t;
   }
   function copyList(){
@@ -286,11 +312,16 @@ function boot(E){
 
   /* 事件 */
   document.addEventListener('click',e=>{
-    const t=e.target.closest('[data-opt],[data-self],[data-act],[data-jump],.tab');if(!t)return;
+    const t=e.target.closest('[data-opt],[data-self],[data-act],[data-jump],[data-ref],.tab');if(!t)return;
     if(t.classList.contains('tab'))return show(t.dataset.v);
     if(t.dataset.opt!==undefined)return answer(+t.dataset.opt);
     if(t.dataset.self!==undefined)return answer(t.dataset.self==='1'?0:1);
     if(t.dataset.jump)return jump(t.dataset.jump);
+    if(t.dataset.ref){
+      show('learn');const d=document.getElementById('ref-'+t.dataset.ref);
+      if(d){d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'})}
+      return;
+    }
     const a=t.dataset.act;
     if(a==='next')next();
     else if(a==='variant')load(cur.id,true);

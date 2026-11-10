@@ -64,3 +64,12 @@ QUIZ.register({
 - 自動控制把觀念題排在最前面、計算題依章排在後面，分類清單在 `exams/autocontrol.js` 最後的 `CONCEPT`。
 - 網址加 `&q=<總題號>` 會直接開那一題，例如 `play.html?exam=autocontrol&q=40`。
 - 新題目要加在 `BANK` 最後面，插在中間會讓後面的總題號全部往後移。
+
+## 查表區（open book 用）
+
+在 `QUIZ.register` 加 `refs:[{id, title, rows:[[左欄, 右欄], …], note}]`，題目加 `refs:['表的 id', …]`：
+
+- 觀念總覽最上面會出現「表 1、表 2…」，每列有編號，每張表列出會用到它的總題號。
+- 題目上方會出現「要查：表 N」按鈕，點了直接打開那張表。
+- 複製題號表時，每題會附「要查」，表的內容附在最後面。
+- 自動控制的表和每題要查哪張表，在 `exams/autocontrol.js` 的 `REFS`、`USE`。
