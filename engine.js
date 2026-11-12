@@ -33,6 +33,14 @@ const QUIZ={register(exam){QUIZ.exam=exam;boot(exam)}};
 function boot(E){
   const BANK=E.bank,GEN=E.gen||{},Q=Object.fromEntries(BANK.map(q=>[q.id,q]));
   const CALC_IDS=BANK.filter(q=>q.gen).map(q=>q.id),TOTAL=BANK.length;
+  /* 總題號：整科從 1 編到最後一題，順序和進度格子一樣，跨章也不會重複 */
+  const NO=Object.fromEntries(BANK.map((q,i)=>[q.id,i+1]));
+  const origNo=q=>q.no?q.no:`第 ${q.n} 題`;
+  /* 查表區：E.refs 是編號的參考表，題目用 q.refs 列出要查哪幾張（id）。表號 = 在 E.refs 的順序 */
+  const REFS=E.refs||[],REF=Object.fromEntries(REFS.map((t,i)=>[t.id,{...t,no:i+1}]));
+  const qRefs=q=>(q.refs||[]).filter(id=>REF[id]).map(id=>REF[id]).sort((a,b)=>a.no-b.no);
+  const refName=t=>`表 ${t.no}　${t.title}`;
+  const refBtns=q=>qRefs(q).map(t=>`<button class="refbtn" data-ref="${t.id}">${esc(refName(t))}</button>`).join('');
   const setLabel=id=>(E.sets.find(s=>s.id===id)||{}).label||'';
   let S={rec:{},wrong:[],scope:'all',order:'seq'};
   const saved=loadProgress(E.id);if(saved&&saved.rec)S=Object.assign(S,saved);
@@ -141,7 +149,7 @@ function boot(E){
       return;
     }
     const q=Q[cur.id],st=status(cur.id);
-    let h=`<div class="meta"><span class="chip">${esc(setLabel(q.set))} · ${q.no?esc(q.no):`第 ${q.n} 題`}</span><span class="chip">${esc(q.topic)}</span>`;
+    let h=`<div class="meta"><span class="chip gno">總題號 ${NO[q.id]}</span><span class="chip">${esc(setLabel(q.set))} · ${esc(origNo(q))}</span><span class="chip">${esc(q.topic)}</span>`;
     if(cur.variant)h+=`<span class="chip var">換數字版</span>`;
     if(st==='mast')h+=`<span class="chip mast">已精通</span>`;
     h+=`</div>`;
@@ -150,6 +158,7 @@ function boot(E){
       <details class="deep"${cur.done||!canSpeak()?' open':''}><summary>聽力原文</summary><div class="in script">${q.scriptTitle?`<b>${esc(q.scriptTitle)}</b>\n\n`:''}${esc(q.script)}</div></details></div>`;
     }
     h+=`<p class="qtext">${esc(cur.text)}</p>${qImg(q)}`;
+    if(qRefs(q).length)h+=`<p class="refline">要查：${refBtns(q)}</p>`;
     if(cur.self){
       h+=`<div class="wk">${q.html}</div>`;
       if(!cur.revealed){
@@ -185,16 +194,17 @@ function boot(E){
     c.innerHTML=h;
   }
   function renderMap(){
-    let h=`<h2>${TOTAL} 題進度（點格子跳到該題）</h2>`;
+    let h=`<h2>${TOTAL} 題進度（格子上是總題號，點格子跳到該題）</h2>`;
     E.sets.forEach(s=>{
       const qs=BANK.filter(q=>q.set===s.id);
       h+=`<div class="maprow"><span class="lb">${esc(s.label)}</span><div class="cells">`;
       qs.forEach(q=>{
-        h+=`<button class="cell ${status(q.id)}${cur&&cur.id===q.id?' cur':''}" data-jump="${q.id}" title="${esc(q.short)}" aria-label="${esc(s.label)} 第${q.n}題 ${esc(q.short)}">${q.n}</button>`;
+        h+=`<button class="cell ${status(q.id)}${cur&&cur.id===q.id?' cur':''}" data-jump="${q.id}" title="總題號 ${NO[q.id]}｜${esc(s.label)} ${esc(origNo(q))}｜${esc(q.short)}" aria-label="總題號 ${NO[q.id]}，${esc(s.label)} ${esc(origNo(q))} ${esc(q.short)}">${NO[q.id]}</button>`;
       });
       h+=`</div></div>`;
     });
     h+=`<div class="legend"><span><i></i>還沒做</span><span><i class="l-bad"></i>錯題</span><span><i class="l-ok"></i>答對過</span><span><i class="l-mast"></i>${CALC_IDS.length?'精通（計算題要再換數字對 2 次）':'精通'}</span></div>`;
+    h+=`<div class="acts"><button class="btn" data-act="copylist">複製題號表（貼給 AI 用）</button><span class="note" id="copymsg"></span></div><textarea id="copybox" class="copybox" readonly hidden></textarea>`;
     $('#map').innerHTML=h;
   }
   let resetArm=false;
@@ -204,10 +214,20 @@ function boot(E){
     if(!S.wrong.length){v.innerHTML=`<div class="card empty"><b>目前沒有錯題</b>去「刷題」做一輪，答錯的會自動收進來。</div>`+resetHtml();return}
     const ids=BANK.map(q=>q.id).filter(id=>S.wrong.includes(id));
     v.innerHTML=`<div class="bar"><button class="btn pri" data-act="dowrong">全部重刷（${ids.length} 題）</button><span class="note">答對原題就會移出錯題本。</span></div>
-    <div class="wl">${ids.map(id=>{const q=Q[id];return`<div class="wi"><div class="tt"><small>${esc(setLabel(q.set))} 第 ${q.n} 題 · ${esc(q.topic)}</small>${esc(q.short)}</div><button class="btn" data-jump="${id}">練這題</button></div>`}).join('')}</div>`+resetHtml();
+    <div class="wl">${ids.map(id=>{const q=Q[id];return`<div class="wi"><div class="tt"><small>總題號 ${NO[id]} · ${esc(setLabel(q.set))} ${esc(origNo(q))} · ${esc(q.topic)}</small>${esc(q.short)}</div><button class="btn" data-jump="${id}">練這題</button></div>`}).join('')}</div>`+resetHtml();
   }
   function renderLearn(){
     let h='';
+    if(REFS.length){
+      h+=`<h2>查表區（${REFS.length} 張表，寫題時對照用）</h2><p class="note">每張表下面列出會用到它的總題號，點題號就去練那題。題目上方的「要查」也會告訴你該翻哪張表。</p>`;
+      REFS.forEach(t0=>{const t=REF[t0.id];
+        const used=BANK.filter(q=>(q.refs||[]).includes(t.id));
+        h+=`<details class="item ref" id="ref-${t.id}"><summary><span class="no">表 ${t.no}</span><span class="tt">${esc(t.title)}</span></summary><div class="in">`
+          +(used.length?`<p class="refuse">會用到的題：${used.map(q=>`<button class="refbtn" data-jump="${q.id}">第 ${NO[q.id]} 題</button>`).join('')}</p>`:'')
+          +`<div class="tblwrap"><table><tbody>${t.rows.map((r,i)=>`<tr><td class="rn">${i+1}</td><td class="fm">${r[0]}</td><td>${r[1]||''}</td></tr>`).join('')}</tbody></table></div>`
+          +(t.note?`<p class="note">${t.note}</p>`:'')+`</div></details>`;
+      });
+    }
     if(E.formulas&&E.formulas.length)h+=`<h2>公式總表</h2><div class="tblwrap"><table><thead><tr><th>公式</th><th>用途</th><th>出處</th></tr></thead><tbody>${E.formulas.map(f=>`<tr><td class="fm">${f[0]}</td><td>${f[1]}</td><td>${f[2]}</td></tr>`).join('')}</tbody></table></div>`;
     if(E.unitNote)h+=`<p class="note">${esc(E.unitNote)}</p>`;
     E.sets.forEach(s=>{
@@ -216,9 +236,9 @@ function boot(E){
       [...new Set(qs.map(q=>q.topic))].forEach(t=>{
         h+=`<div class="grp"><h3>${esc(t)}</h3>`;
         qs.filter(q=>q.topic===t).forEach(q=>{
-          h+=`<details class="item"><summary><span class="dot ${status(q.id)}"></span><span class="no">${q.no?esc(q.no):`第 ${q.n} 題`}</span><span class="tt">${esc(q.short)}</span></summary>
+          h+=`<details class="item"><summary><span class="dot ${status(q.id)}"></span><span class="no">#${NO[q.id]}</span><span class="tt">${esc(origNo(q))}　${esc(q.short)}</span></summary>
           <div class="in">${q.sol?`<div class="wk">${q.html}</div><div class="wk wk-sol">${q.sol}</div>`:`<p class="qtext-sm">${esc(q.q)}</p>${qImg(q)}<p class="ans">答案：${esc(q.o[q.a])}</p><p>${esc(q.exp)}</p>${q.deep||''}`}
-          <p><button class="btn" data-jump="${q.id}">去練這題</button></p></div></details>`;
+          ${qRefs(q).length?`<p class="refline">要查：${refBtns(q)}</p>`:''}<p><button class="btn" data-jump="${q.id}">去練這題</button></p></div></details>`;
         });
         h+=`</div>`;
       });
@@ -246,17 +266,67 @@ function boot(E){
     window.scrollTo({top:0,behavior:'smooth'});
   }
 
+  /* 題號表：每題標總題號，貼給 AI，請它講題時用總題號 */
+  function listText(){
+    const strip=h=>String(h||'').replace(/<br\s*\/?>/g,'\n').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/[ \t]+/g,' ').trim();
+    let t=`${E.title}・題號表（總題號 1–${TOTAL}）\n請你講題時一律用「總題號」稱呼題目（例如「第 36 題」），不要用章節裡的原題號，我才找得到題目。\n`;
+    if(REFS.length)t+=`我的考試可以翻書，網站上有編號的查表區（內容附在最後面）。講題時請告訴我要翻哪一張表的哪一列。\n`;
+    E.sets.forEach(s=>{
+      t+=`\n【${s.label}】\n`;
+      BANK.filter(q=>q.set===s.id).forEach(q=>{
+        t+=`\n第 ${NO[q.id]} 題（原題號：${s.label}・${origNo(q)}｜${q.topic}）\n${q.sol?strip(q.html)||q.q:q.q}\n`;
+        if(q.o)t+=`選項：${q.o.join('／')}\n`;
+        if(qRefs(q).length)t+=`要查：${qRefs(q).map(refName).join('、')}\n`;
+      });
+    });
+    if(REFS.length){
+      const plain=h=>strip(String(h).replace(/<sup>/g,'^(').replace(/<\/sup>/g,')').replace(/<sub>/g,'_').replace(/<\/sub>/g,''));
+      t+=`\n\n====== 查表區 ======\n`;
+      REFS.forEach(t0=>{const tb=REF[t0.id];
+        t+=`\n【${refName(tb)}】\n`+tb.rows.map((rw,i)=>`${i+1}. ${plain(rw[0])}：${plain(rw[1]||'')}`).join('\n')+'\n';
+        if(tb.note)t+=`註：${plain(tb.note)}\n`;
+      });
+    }
+    return t;
+  }
+  function copyList(){
+    const txt=listText(),msg=$('#copymsg'),box=$('#copybox');
+    const fallback=()=>{box.hidden=false;box.value=txt;box.focus();box.select();msg.textContent='請全選下面的文字自己複製。'};
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(()=>{msg.textContent=`已複製 ${TOTAL} 題，貼給 AI 就可以。`},fallback);
+    else fallback();
+  }
+
+  /* 依總題號跳題：輸入框、或網址加 &q=<總題號> */
+  function gotoNo(v){
+    const n=parseInt(String(v).replace(/[^0-9]/g,''),10);
+    if(n>=1&&n<=TOTAL){jump(BANK[n-1].id);return true}
+    return false;
+  }
+  const gotoEl=$('#goto');
+  if(gotoEl){
+    gotoEl.max=TOTAL;gotoEl.placeholder=`1–${TOTAL}`;
+    const go=()=>{if(gotoNo(gotoEl.value))gotoEl.value='';else gotoEl.select()};
+    gotoEl.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();go()}});
+    $('#gobtn').addEventListener('click',go);
+  }
+
   /* 事件 */
   document.addEventListener('click',e=>{
-    const t=e.target.closest('[data-opt],[data-self],[data-act],[data-jump],.tab');if(!t)return;
+    const t=e.target.closest('[data-opt],[data-self],[data-act],[data-jump],[data-ref],.tab');if(!t)return;
     if(t.classList.contains('tab'))return show(t.dataset.v);
     if(t.dataset.opt!==undefined)return answer(+t.dataset.opt);
     if(t.dataset.self!==undefined)return answer(t.dataset.self==='1'?0:1);
     if(t.dataset.jump)return jump(t.dataset.jump);
+    if(t.dataset.ref){
+      show('learn');const d=document.getElementById('ref-'+t.dataset.ref);
+      if(d){d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'})}
+      return;
+    }
     const a=t.dataset.act;
     if(a==='next')next();
     else if(a==='variant')load(cur.id,true);
     else if(a==='speak')toggleSpeech();
+    else if(a==='copylist')copyList();
     else if(a==='reveal'){cur.revealed=true;render()}
     else if(a==='again'){S.order='rnd';$('#order').value='rnd';save();start()}
     else if(a==='dowrong'){S.scope='wrong';scopeEl.value='wrong';save();show('drill');start()}
@@ -269,7 +339,7 @@ function boot(E){
   $('#order').addEventListener('change',e=>{S.order=e.target.value;save();start()});
   document.addEventListener('keydown',e=>{
     if(view!=='drill'||!cur||e.metaKey||e.ctrlKey||e.altKey)return;
-    if(e.target.tagName==='SELECT')return;
+    if(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')return;
     const k=e.key.toLowerCase();
     if(cur.self&&!cur.done){
       if(!cur.revealed&&k==='enter'){e.preventDefault();cur.revealed=true;render()}
@@ -284,6 +354,8 @@ function boot(E){
   if(![...scopeEl.options].some(o=>o.value===String(S.scope)))S.scope='all';
   scopeEl.value=S.scope;$('#order').value=S.order;
   start();
+  const qp=new URLSearchParams(location.search).get('q');
+  if(qp)gotoNo(qp);
 }
 
 /* 依網址 ?exam=<id> 載入題庫 */
